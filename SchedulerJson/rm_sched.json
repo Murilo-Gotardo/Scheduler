@@ -1,0 +1,28 @@
+{
+  "simulation_time": 18,
+  "scheduler_name": "rm",
+  "tasks_number": 3,
+  "tasks": [
+    {
+      "priority": 5,
+      "offset": 0,
+      "computation_time": 1,
+      "period_time": 5,
+      "deadline": 5
+    },
+    {
+      "priority": 4,
+      "offset": 0,
+      "computation_time": 2,
+      "period_time": 8,
+      "deadline": 8
+    },
+    {
+      "priority": 3,
+      "offset": 0,
+      "computation_time": 5,
+      "period_time": 18,
+      "deadline": 18
+    }
+  ]
+}

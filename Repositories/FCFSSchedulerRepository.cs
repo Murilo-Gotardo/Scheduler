@@ -8,7 +8,7 @@ namespace Scheduler.Repository
     {
         public void Schedule(Queue<TaskSOModel> readyQueue, int time, int totalSimulationTime)
         {
-            if (CPUModel.TaskSO != null && CPUModel.TaskSO.ComputationTime == CPUModel.TaskSO.ExecutedTime)
+            if (CPUModel.TaskSO != null && CPUModel.TaskSO.ExecutedTime % CPUModel.TaskSO.ComputationTime == 0)
             {
                 CPUModel.TaskSO.CompletionTime = time;
                 CPUModel.TaskSO = null;

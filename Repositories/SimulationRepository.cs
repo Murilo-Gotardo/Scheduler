@@ -26,7 +26,7 @@ namespace Scheduler.Repository
 
             while (schedulerJson.SimulationTime >= simulationModel.Time)
             {
-                CalculateReadyQueue(readyQueue, allTasksThroughSystem, schedulerJson, simulationModel);
+                CalculateReadyQueue(ref readyQueue, allTasksThroughSystem, schedulerJson, simulationModel);
 
                 series[simulationModel.Time] = CPUModel.Utilization / schedulerJson.SimulationTime * 100;
 
@@ -43,26 +43,43 @@ namespace Scheduler.Repository
             ShowSystemMetricsAndStatistics(allTasksThroughSystem, schedulerJson.SimulationTime, series);
         }
 
-        private void AtachIdToTask()
-        {
-
-        }
-
-        private void CalculateReadyQueue(Queue<TaskSOModel> readyQueue, List<TaskSOModel> allTasksThroughSystem, SchedulerModel schedulerJson, SimulationModel simulationModel)
+        private static void CalculateReadyQueue(ref Queue<TaskSOModel> readyQueue, List<TaskSOModel> allTasksThroughSystem, SchedulerModel schedulerJson, SimulationModel simulationModel)
         {
             foreach (var task in schedulerJson.Tasks)
             {
-                if (task.Offset == simulationModel.Time && simulationModel.Time != schedulerJson.SimulationTime)
+                //TODO: melhora esse negocio aqui (task.Offset + simulationModel.Time) % task.PeriodTime == 0), que nao ta funfando
+                if ((task.Offset == simulationModel.Time || (task.Offset + simulationModel.Time) % task.PeriodTime == 0) && simulationModel.Time != schedulerJson.SimulationTime)
                 {
-                    TaskSOModel newTask = new(
-                        task.Offset,
-                        task.ComputationTime,
-                        task.PeriodTime,
-                        "T" + (simulationModel.TaskNumber + 1)
-                    );
+                    TaskSOModel? newTask = null;
 
-                    allTasksThroughSystem.Add(newTask);
-                    readyQueue.Enqueue(newTask);
+                    string idToUse = "T" + (simulationModel.TaskNumber + 1);
+
+                    if (!allTasksThroughSystem.Exists(t => t.Id.Equals(idToUse)))
+                    {
+                        newTask = new(
+                            task.Offset,
+                            task.ComputationTime,
+                            task.PeriodTime,
+                            idToUse
+                        );
+
+                        allTasksThroughSystem.Add(newTask);
+                    }
+
+                    if (task.Quantum != null)
+                    {
+                        allTasksThroughSystem.Find(t => t.Id.Equals(idToUse)).Quantum = task.Quantum;
+                    }
+
+                    if (task.Deadline != null)
+                    {
+                        allTasksThroughSystem.Find(t => t.Id.Equals(idToUse)).Deadline = task.Deadline;
+                    }
+
+                    
+
+                    readyQueue.Enqueue(allTasksThroughSystem.Find(t => t.Id.Equals(idToUse)));
+                    readyQueue = new Queue<TaskSOModel>([.. readyQueue.OrderBy(t => t.Priority)]);
                 }
 
                 if (simulationModel.TaskNumber < schedulerJson.TasksNumber) simulationModel.TaskNumber++;
@@ -139,12 +156,13 @@ namespace Scheduler.Repository
             }
         }
 
-        private IScheduler SelectScheduler(string schedulerName)
+        private static IScheduler SelectScheduler(string schedulerName)
         {
             return schedulerName.ToUpper() switch
             {
                 "FCFS" => new FCFSSchedulerRepository(),
                 "RR" => new RRSchedulerRepository(),
+                "RM" => new RMSchedulerRepository(),
                 _ => throw new NotImplementedException("Escalonador não suportado")
             };
         }

@@ -64,8 +64,8 @@ namespace Scheduler.Repositories
                 }
             }
 
-            _consoleLogger.LogMetrics($"Menor WaitTime: {taskMaxWaitTime.Id} => {minWaitTime}");
-            _consoleLogger.LogMetrics($"Maior WaitTime: {taskMinWaitTime.Id} => {maxWaitTime}");
+            _consoleLogger.LogMetrics($"Menor WaitTime: {taskMinWaitTime.Id} => {minWaitTime}");
+            _consoleLogger.LogMetrics($"Maior WaitTime: {taskMaxWaitTime.Id} => {maxWaitTime}");
             _consoleLogger.LogMetrics(("WaitTime médio do sistema: " + CalculateAVGWaitTime(sum, tasks.Count)));
         }
 
@@ -139,6 +139,11 @@ namespace Scheduler.Repositories
                 Console.Write($" {i} ");
             }
             Console.WriteLine();
+        }
+
+        public void ShowLostDeadline(List<TaskSOModel> allTasksThroughSystem)
+        {
+
         }
 
         public void ShowCPUUtilization(int simulationTime, double[] series)

@@ -1,10 +1,15 @@
 ﻿using Scheduler.Model.CPUAggregate;
 using Scheduler.Model.SchedulerAggregate;
 using Scheduler.Model.TaskSOAggregate;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Scheduler.Repositories
 {
-    public class RRSchedulerRepository : IScheduler
+    public class RMSchedulerRepository : IScheduler
     {
         public void Schedule(Queue<TaskSOModel> readyQueue, int time, int totalSimulationTime)
         {
@@ -14,12 +19,12 @@ namespace Scheduler.Repositories
                 {
                     CPUModel.TaskSO.CompletionTime = time;
                     CPUModel.TaskSO = null;
-                } 
-                else if (CPUModel.TaskSO.ExecutedTime % CPUModel.TaskSO.Quantum == 0)
+                }
+                else if (CPUModel.TaskSO.Priority < readyQueue.Peek().Priority)
                 {
                     readyQueue.Enqueue(CPUModel.TaskSO);
                     CPUModel.TaskSO = null;
-                } 
+                }
             }
 
             if (readyQueue.Count != 0 && CPUModel.TaskSO == null && time < totalSimulationTime)
