@@ -15,12 +15,12 @@ namespace Scheduler.Model.SchedulerAggregate
         public int TasksNumber { get; set; }
 
         [JsonProperty("tasks")]
-        public List<TaskSOModel>? Tasks { get; set; }
+        public List<TaskSoModel>? Tasks { get; set; }
 
         [JsonIgnore]
-        public List<TaskSOModel> StarvedTasks { get; set; } = [];
+        public List<TaskSoModel> StarvedTasks { get; set; } = [];
 
         [JsonIgnore]
-        public List<TaskSOModel> HalfExecTasks { get; set; } = [];
+        public List<TaskSoModel> HalfExecTasks { get; set; } = [];
     }
 }

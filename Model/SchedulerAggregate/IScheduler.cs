@@ -11,6 +11,6 @@ namespace Scheduler.Model.SchedulerAggregate
 {
     public interface IScheduler
     {
-        void Schedule(Queue<TaskSOModel> readyQueue, int time, int totalSimulationTime);
+        void Schedule(Queue<TaskSoModel> readyQueue, int time, int totalSimulationTime);
     }
 }

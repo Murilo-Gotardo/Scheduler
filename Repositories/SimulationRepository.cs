@@ -3,24 +3,20 @@ using Scheduler.Model.CPUAggregate;
 using Scheduler.Model.SchedulerAggregate;
 using Scheduler.Model.SimulationAggregate;
 using Scheduler.Model.TaskSOAggregate;
-using Scheduler.Repositories;
 using Scheduler.Util;
 
-namespace Scheduler.Repository
+namespace Scheduler.Repositories
 {
-    public class SimulationRepository(IConsoleLogger consoleLogger, ICPU cpu) : ISimulation
+    public class SimulationRepository(IConsoleLogger consoleLogger, ICpu cpu) : ISimulation
     {
-        private readonly IConsoleLogger _consoleLogger = consoleLogger;
-        private readonly ICPU _cpu = cpu;
-
         public void SimulateScheduler()
         {
             SchedulerModel schedulerJson = GetSchedulerJson();
             SimulationModel simulationModel = new();
             IScheduler scheduler = SelectScheduler(schedulerJson.SchedulerName);
 
-            List<TaskSOModel> allTasksThroughSystem = [];
-            Queue<TaskSOModel> readyQueue = [];
+            List<TaskSoModel> allTasksThroughSystem = [];
+            Queue<TaskSoModel> readyQueue = [];
 
             var series = new double[schedulerJson.SimulationTime + 1];
 
@@ -28,7 +24,7 @@ namespace Scheduler.Repository
             {
                 CalculateReadyQueue(ref readyQueue, allTasksThroughSystem, schedulerJson, simulationModel);
 
-                series[simulationModel.Time] = CPUModel.Utilization / schedulerJson.SimulationTime * 100;
+                series[simulationModel.Time] = CpuModel.Utilization / schedulerJson.SimulationTime * 100;
 
                 scheduler.Schedule(readyQueue, simulationModel.Time, schedulerJson.SimulationTime);
 
@@ -43,102 +39,105 @@ namespace Scheduler.Repository
             ShowSystemMetricsAndStatistics(allTasksThroughSystem, schedulerJson.SimulationTime, series);
         }
 
-        private static void CalculateReadyQueue(ref Queue<TaskSOModel> readyQueue, List<TaskSOModel> allTasksThroughSystem, SchedulerModel schedulerJson, SimulationModel simulationModel)
+        private static void CalculateReadyQueue(ref Queue<TaskSoModel> readyQueue, List<TaskSoModel> allTasksThroughSystem, SchedulerModel schedulerJson, SimulationModel simulationModel)
         {
             foreach (var task in schedulerJson.Tasks)
             {
-                //TODO: melhora esse negocio aqui (task.Offset + simulationModel.Time) % task.PeriodTime == 0), que nao ta funfando
-                if ((task.Offset == simulationModel.Time || (task.Offset + simulationModel.Time) % task.PeriodTime == 0) && simulationModel.Time != schedulerJson.SimulationTime)
+                var idToUse = "T" + (simulationModel.TaskNumber + 1);
+                
+                if (!allTasksThroughSystem.Exists(t => t.Id.Equals(idToUse)))
                 {
-                    TaskSOModel? newTask = null;
+                    TaskSoModel newTask = new(
+                        task.Offset,
+                        task.ComputationTime,
+                        task.PeriodTime,
+                        idToUse
+                    );
 
-                    string idToUse = "T" + (simulationModel.TaskNumber + 1);
+                    allTasksThroughSystem.Add(newTask);
+                }
+                
+                var taskToUse = allTasksThroughSystem.Find(t => t.Id.Equals(idToUse));
 
-                    if (!allTasksThroughSystem.Exists(t => t.Id.Equals(idToUse)))
-                    {
-                        newTask = new(
-                            task.Offset,
-                            task.ComputationTime,
-                            task.PeriodTime,
-                            idToUse
-                        );
-
-                        allTasksThroughSystem.Add(newTask);
-                    }
-
-                    if (task.Quantum != null)
-                    {
-                        allTasksThroughSystem.Find(t => t.Id.Equals(idToUse)).Quantum = task.Quantum;
-                    }
-
-                    if (task.Deadline != null)
-                    {
-                        allTasksThroughSystem.Find(t => t.Id.Equals(idToUse)).Deadline = task.Deadline;
-                    }
-
-                    
-
-                    readyQueue.Enqueue(allTasksThroughSystem.Find(t => t.Id.Equals(idToUse)));
-                    readyQueue = new Queue<TaskSOModel>([.. readyQueue.OrderBy(t => t.Priority)]);
+                if (task.Quantum != null)
+                {
+                    taskToUse.Quantum = task.Quantum;
                 }
 
+                if (task.Deadline != null)
+                {
+                    taskToUse.Deadline = task.Deadline;
+                }
+
+                if (taskToUse.Cicle * task.PeriodTime + task.Offset == simulationModel.Time)
+                {
+                    taskToUse.Cicle++;
+                    readyQueue.Enqueue(taskToUse);
+                    readyQueue = new Queue<TaskSoModel>([.. readyQueue.OrderBy(t => t.Priority)]);
+                }
+                
                 if (simulationModel.TaskNumber < schedulerJson.TasksNumber) simulationModel.TaskNumber++;
             }
         }
 
-        private void ShowSystemTasksOnTable(int taskNumber, int totalSimulationTime, List<TaskSOModel> allTasksThroughSystem)
+        private void ShowSystemTasksOnTable(int taskNumber, int totalSimulationTime, List<TaskSoModel> allTasksThroughSystem)
         {
-            _consoleLogger.LogMetrics("Mostrando tabela de execução");
-            _cpu.CalculateTableOfTasks(taskNumber, totalSimulationTime, allTasksThroughSystem);
+            consoleLogger.LogMetrics("Mostrando tabela de execução");
+            cpu.CalculateTableOfTasks(taskNumber, totalSimulationTime, allTasksThroughSystem);
         }
 
-        private void ShowStarvedAndHalfExecTasks(SchedulerModel scheduler, List<TaskSOModel> allTasksThroughSystem)
+        private void ShowStarvedAndHalfExecTasks(SchedulerModel scheduler, List<TaskSoModel> allTasksThroughSystem)
         {
-            _cpu.CalculateStarvedAndHalfExecTasks(scheduler, allTasksThroughSystem);
+            cpu.CalculateStarvedAndHalfExecTasks(scheduler, allTasksThroughSystem);
 
             foreach (var task in scheduler.StarvedTasks)
             {
-                _consoleLogger.LogInfo(task.Id + " sofreu starvation");
+                consoleLogger.LogInfo(task.Id + " sofreu starvation");
             }
 
             foreach (var task in scheduler.HalfExecTasks)
             {
-                _consoleLogger.LogInfo(task.Id + " não executou totalmente");
+                consoleLogger.LogInfo(task.Id + " não executou totalmente");
             }
         }
 
-        private void ShowSystemMetricsAndStatistics(List<TaskSOModel> tasks, int simulationTime, double[] series)
+        private void ShowSystemMetricsAndStatistics(List<TaskSoModel> tasks, int simulationTime, double[] series)
         {
-            _cpu.ShowTurnAroundTime(tasks);
-            _cpu.ShowWaitTime(tasks);
-            _cpu.ShowCPUUtilization(simulationTime, series);
+            cpu.ShowTurnAroundTime(tasks);
+            cpu.ShowWaitTime(tasks);
+            cpu.ShowCpuUtilization(simulationTime, series);
         }
 
         public SchedulerModel GetSchedulerJson()
         {
-            string schedulerJsonDirectory = @"..\..\..\SchedulerJson\";
+            var currentDirectory = Directory.GetCurrentDirectory();
+
+            var p = Directory.GetParent(currentDirectory)?.FullName;
+            var a = Directory.GetParent(p!)?.FullName;
+            var b = Directory.GetParent(a!)?.FullName;
+            var schedulerJsonDirectory = Path.Combine(b!, "SchedulerJson");;
 
             // Verifica se o diretório existe
             if (Directory.Exists(schedulerJsonDirectory))
             {
                 // Obtém uma matriz com o nome de todos os arquivos no diretório
-                string[] files = Directory.GetFiles(schedulerJsonDirectory);
+                var files = Directory.GetFiles(schedulerJsonDirectory);
 
                 Console.WriteLine("Schedulers disponíveis:");
 
                 // Itera sobre cada arquivo e imprime seu nome
-                int i = 0;
-                foreach (string file in files)
+                var i = 0;
+                foreach (var file in files)
                 {
                     i++;
                     Console.WriteLine(i + " - " + Path.GetFileName(file));
                 }
 
-                string fileChoice = Console.ReadLine();
+                var fileChoice = Console.ReadLine();
 
                 if (int.TryParse(fileChoice, out int choice) && choice >= 1 && choice <= files.Length)
                 {
-                    string chosenFile = files[choice - 1];
+                    var chosenFile = files[choice - 1];
                     
                     var json = JsonConvert.DeserializeObject<SchedulerModel>(File.ReadAllText(chosenFile));
 
@@ -160,9 +159,9 @@ namespace Scheduler.Repository
         {
             return schedulerName.ToUpper() switch
             {
-                "FCFS" => new FCFSSchedulerRepository(),
-                "RR" => new RRSchedulerRepository(),
-                "RM" => new RMSchedulerRepository(),
+                "FCFS" => new FcfsSchedulerRepository(),
+                "RR" => new RrSchedulerRepository(),
+                "RM" => new RmSchedulerRepository(),
                 _ => throw new NotImplementedException("Escalonador não suportado")
             };
         }

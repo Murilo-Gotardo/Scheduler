@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Scheduler.Model.TaskSOAggregate
 {
-    public interface ITaskSO
+    public interface ITaskSo
     {
     }
 }

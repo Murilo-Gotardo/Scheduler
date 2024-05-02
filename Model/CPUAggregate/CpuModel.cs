@@ -2,9 +2,9 @@
 
 namespace Scheduler.Model.CPUAggregate
 {
-    internal static class CPUModel
+    internal static class CpuModel
     {
-        public static TaskSOModel? TaskSO { get; set; }
+        public static TaskSoModel? TaskSo { get; set; }
 
         public static double Utilization { get; set; }
     }

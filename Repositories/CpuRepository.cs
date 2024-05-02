@@ -7,11 +7,9 @@ using System.Text;
 
 namespace Scheduler.Repositories
 {
-    public class CPURepository(IConsoleLogger consoleLogger) : ICPU
+    public class CpuRepository(IConsoleLogger consoleLogger) : ICpu
     {
-        private readonly IConsoleLogger _consoleLogger = consoleLogger;
-
-        public void ShowTurnAroundTime(List<TaskSOModel> tasks)
+        public void ShowTurnAroundTime(List<TaskSoModel> tasks)
         {
             double sum = 0;
             foreach (var task in tasks)
@@ -19,14 +17,14 @@ namespace Scheduler.Repositories
                 CalculateTurnAroundTimeSum(ref sum, task.CompletionTime, task.Offset);
                 if (!(CalculateTurnAroundTimeForTask(task.CompletionTime, task.Offset) <= 0))
                 { 
-                    _consoleLogger.LogStatistics("Turnaround time de " + task.Id + ": " + CalculateTurnAroundTimeForTask(task.CompletionTime, task.Offset));
+                    consoleLogger.LogStatistics("Turnaround time de " + task.Id + ": " + CalculateTurnAroundTimeForTask(task.CompletionTime, task.Offset));
                 }
             }
 
-            _consoleLogger.LogStatistics("Turnaround time médio do sistema: " + CalculateAVGTurnAroundTime(sum, tasks.Count));
+            consoleLogger.LogStatistics("Turnaround time médio do sistema: " + CalculateAvgTurnAroundTime(sum, tasks.Count));
         }
 
-        private static double CalculateAVGTurnAroundTime(double sum, int tasksNumber) 
+        private static double CalculateAvgTurnAroundTime(double sum, int tasksNumber) 
         {
             return sum / tasksNumber;
         }
@@ -35,20 +33,20 @@ namespace Scheduler.Repositories
 
         private static int CalculateTurnAroundTimeForTask(int completionTime, int offset) => completionTime - offset;
 
-        public void ShowWaitTime(List<TaskSOModel> tasks)
+        public void ShowWaitTime(List<TaskSoModel> tasks)
         {
             double sum = 0;
-            TaskSOModel? taskMaxWaitTime = null;
-            TaskSOModel? taskMinWaitTime = null;
-            int maxWaitTime = int.MinValue;
-            int minWaitTime = int.MaxValue;
+            TaskSoModel? taskMaxWaitTime = null;
+            TaskSoModel? taskMinWaitTime = null;
+            var maxWaitTime = int.MinValue;
+            var minWaitTime = int.MaxValue;
 
             foreach (var task in tasks)
             {
                 CalculateWaitTimeSum(ref sum, task.WaitedTime);
                 if (task.ExecutedTime != 0)
                 {
-                    _consoleLogger.LogMetrics("WaitTime de " + task.Id + ": " + task.WaitedTime);
+                    consoleLogger.LogMetrics("WaitTime de " + task.Id + ": " + task.WaitedTime);
 
                     if (task.WaitedTime > maxWaitTime)
                     {
@@ -64,16 +62,16 @@ namespace Scheduler.Repositories
                 }
             }
 
-            _consoleLogger.LogMetrics($"Menor WaitTime: {taskMinWaitTime.Id} => {minWaitTime}");
-            _consoleLogger.LogMetrics($"Maior WaitTime: {taskMaxWaitTime.Id} => {maxWaitTime}");
-            _consoleLogger.LogMetrics(("WaitTime médio do sistema: " + CalculateAVGWaitTime(sum, tasks.Count)));
+            consoleLogger.LogMetrics($"Menor WaitTime: {taskMinWaitTime?.Id} => {minWaitTime}");
+            consoleLogger.LogMetrics($"Maior WaitTime: {taskMaxWaitTime?.Id} => {maxWaitTime}");
+            consoleLogger.LogMetrics(("WaitTime médio do sistema: " + CalculateAvgWaitTime(sum, tasks.Count)));
         }
 
-        private static double CalculateAVGWaitTime(double sum, int tasksNumber) => sum / tasksNumber;
+        private static double CalculateAvgWaitTime(double sum, int tasksNumber) => sum / tasksNumber;
 
         private static void CalculateWaitTimeSum(ref double sum, int waitedTime) => sum += waitedTime;
 
-        public void CalculateStarvedAndHalfExecTasks(SchedulerModel scheduler, List<TaskSOModel> allTasksThroughSystem)
+        public void CalculateStarvedAndHalfExecTasks(SchedulerModel scheduler, List<TaskSoModel> allTasksThroughSystem)
         {
             foreach (var task in allTasksThroughSystem)
             {
@@ -103,17 +101,17 @@ namespace Scheduler.Repositories
         //    }
         //}
 
-        public void CalculateTableOfTasks(int taskNumber, int totalSimulationTime, List<TaskSOModel> allTasksThroughSystem)
+        public void CalculateTableOfTasks(int taskNumber, int totalSimulationTime, List<TaskSoModel> allTasksThroughSystem)
         {
             int[] tasks = new int[taskNumber], time = new int[totalSimulationTime];
 
             Console.OutputEncoding = Encoding.UTF8;
 
-            for (int i = tasks.Length; i > 0; i--)
+            for (var i = tasks.Length; i > 0; i--)
             {
-                string idToSearch = "T" + i;
+                var idToSearch = "T" + i;
                 Console.Write(allTasksThroughSystem.Find(t => t.Id.Equals(idToSearch)).Id +  " |");
-                for (int j = 0; j < time.Length; j++)
+                for (var j = 0; j < time.Length; j++)
                 {
                     if (allTasksThroughSystem.ElementAt(i - 1).WaitPoints.Contains(j))
                     {
@@ -134,21 +132,21 @@ namespace Scheduler.Repositories
 
             Console.Write("Time");
 
-            for (int i = 0; i < time.Length; i++)
+            for (var i = 0; i < time.Length; i++)
             {
                 Console.Write($" {i} ");
             }
             Console.WriteLine();
         }
 
-        public void ShowLostDeadline(List<TaskSOModel> allTasksThroughSystem)
+        public void ShowLostDeadline(List<TaskSoModel> allTasksThroughSystem)
         {
 
         }
 
-        public void ShowCPUUtilization(int simulationTime, double[] series)
+        public void ShowCpuUtilization(int simulationTime, double[] series)
         {
-            _consoleLogger.LogMetrics("Uso de CPU:");
+            consoleLogger.LogMetrics("Uso de CPU:");
 
             Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine(AsciiChart.Sharp.AsciiChart.Plot(series, new Options

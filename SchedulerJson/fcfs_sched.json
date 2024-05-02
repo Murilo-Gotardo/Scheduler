@@ -1,5 +1,5 @@
 {
-  "simulation_time": 28,
+  "simulation_time": 14,
   "scheduler_name": "fcfs",
   "tasks_number": 4,
   "tasks": [
