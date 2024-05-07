@@ -1,7 +1,7 @@
-﻿using Scheduler.Controllers;
-using Scheduler.Model.CPUAggregate;
+﻿using Scheduler.Model.CpuAggregate;
 using Scheduler.Model.SimulationAggregate;
-using Scheduler.Repositories;
+using Scheduler.Infrastructure;
+using Scheduler.Model.SchedulerAggregate;
 using Scheduler.Util;
 
 namespace Scheduler
@@ -11,12 +11,11 @@ namespace Scheduler
         static void Main(string[] args)
         {
             IConsoleLogger logger = new ConsoleLogger();
-            ICpu cpuRepository = new CpuRepository(logger);
-            ISimulation simulationRepository = new SimulationRepository(logger, cpuRepository);
-            SimulationController simulationController = new(simulationRepository);
-
-            Worker app = new(simulationController);
-            app.Run();
+            ICpu cpu = new CpuRepository(logger);
+            IScheduler scheduler = new SchedulerRepository(cpu);
+            var simulationRepository = new SimulationRepository(cpu, logger, scheduler);
+            
+            simulationRepository.SimulateScheduler();
         }
     }
 }

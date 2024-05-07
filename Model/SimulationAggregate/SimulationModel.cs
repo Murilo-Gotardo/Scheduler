@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Scheduler.Model.CPUAggregate;
+using Scheduler.Model.CpuAggregate;
 using Scheduler.Model.SchedulerAggregate;
 using System;
 using System.Collections.Generic;

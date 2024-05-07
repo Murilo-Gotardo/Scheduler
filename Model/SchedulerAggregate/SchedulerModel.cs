@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Scheduler.Model.TaskSOAggregate;
+using Scheduler.Model.TaskAggregate;
 
 namespace Scheduler.Model.SchedulerAggregate
 {
@@ -15,12 +15,12 @@ namespace Scheduler.Model.SchedulerAggregate
         public int TasksNumber { get; set; }
 
         [JsonProperty("tasks")]
-        public List<TaskSoModel>? Tasks { get; set; }
+        public List<TaskModel>? Tasks { get; set; }
 
         [JsonIgnore]
-        public List<TaskSoModel> StarvedTasks { get; set; } = [];
+        public List<TaskModel> StarvedTasks { get; } = [];
 
         [JsonIgnore]
-        public List<TaskSoModel> HalfExecTasks { get; set; } = [];
+        public List<TaskModel> HalfExecTasks { get; } = [];
     }
 }

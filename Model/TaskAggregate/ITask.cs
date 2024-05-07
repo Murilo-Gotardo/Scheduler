@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Scheduler.Model.TaskSOAggregate
+namespace Scheduler.Model.TaskAggregate
 {
-    public interface ITaskSo
+    public interface ITask
     {
     }
 }

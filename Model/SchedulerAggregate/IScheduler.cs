@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Scheduler.Model.TaskSOAggregate;
+using Scheduler.Model.TaskAggregate;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +11,12 @@ namespace Scheduler.Model.SchedulerAggregate
 {
     public interface IScheduler
     {
-        void Schedule(Queue<TaskSoModel> readyQueue, int time, int totalSimulationTime);
+        void FirstComeFirstServe(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime);
+
+        void RoundRobin(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime);
+
+        void RateMonotonic(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime);
+
+        void EarliestDeadlineFirst(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime);
     }
 }
