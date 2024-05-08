@@ -20,6 +20,8 @@ namespace Scheduler.Model.CpuAggregate
 
         void ProgressTask(int time, int totalSimulationTime);
 
-        void MakeTasksWait(Queue<TaskModel> readyQueue, int time);
+        void MakeTasksWait(Queue<TaskModel> readyQueue, int time, int totalSimulationTime);
+
+        void MakeTasksWaitDeadline(Queue<TaskModel> readyQueue, int time, int totalSimulationTime);
     }
 }

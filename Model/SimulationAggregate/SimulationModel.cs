@@ -1,13 +1,4 @@
-﻿using Newtonsoft.Json;
-using Scheduler.Model.CpuAggregate;
-using Scheduler.Model.SchedulerAggregate;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Scheduler.Model.SimulationAggregate
+﻿namespace Scheduler.Model.SimulationAggregate
 {
     public class SimulationModel
     {

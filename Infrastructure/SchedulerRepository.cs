@@ -12,7 +12,7 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
         cpu.VerifyTaskCompletion(time);
         cpu.AddTaskToCpu(ref readyQueue, time, totalSimulationTime);
         cpu.ProgressTask(time, totalSimulationTime);
-        cpu.MakeTasksWait(readyQueue, time);
+        cpu.MakeTasksWait(readyQueue, time, totalSimulationTime);
     }
 
     public void RoundRobin(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime)
@@ -28,7 +28,7 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
         
         cpu.AddTaskToCpu(ref readyQueue, time, totalSimulationTime);
         cpu.ProgressTask(time, totalSimulationTime);
-        cpu.MakeTasksWait(readyQueue, time);
+        cpu.MakeTasksWait(readyQueue, time, totalSimulationTime);
     }
 
     public void RateMonotonic(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime)
@@ -47,7 +47,7 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
         if (CpuModel.TaskSo == null) return;
         cpu.ProgressTask(time, totalSimulationTime);
         cpu.VerifyLostDeadLine(CpuModel.TaskSo, time);
-        cpu.MakeTasksWait(readyQueue, time);
+        cpu.MakeTasksWaitDeadline(readyQueue, time, totalSimulationTime);
     }
 
     public void EarliestDeadlineFirst(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime)
@@ -66,7 +66,7 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
         if (CpuModel.TaskSo == null) return;
         cpu.ProgressTask(time, totalSimulationTime);
         cpu.VerifyLostDeadLine(CpuModel.TaskSo, time);
-        cpu.MakeTasksWait(readyQueue, time);
+        cpu.MakeTasksWaitDeadline(readyQueue, time, totalSimulationTime);
     }
     
     private static void CalculatePriority(IReadOnlyCollection<TaskModel> readyQueue, Priority priority, int? time = null)

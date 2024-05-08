@@ -8,7 +8,7 @@ namespace Scheduler
 {
     public class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             IConsoleLogger logger = new ConsoleLogger();
             ICpu cpu = new CpuRepository(logger);

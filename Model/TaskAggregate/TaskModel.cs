@@ -3,10 +3,10 @@ using Newtonsoft.Json;
 
 namespace Scheduler.Model.TaskAggregate
 {
-    public class TaskModel(int offset, int computationTime, int periodTime, string id)
+    public class TaskModel(int offset, int computationTime, int periodTime, string id) : ICloneable
     {
         [JsonIgnore]
-        public string? Id { get; } = id;
+        public string? Id { get; set; } = id;
         
         [JsonProperty("offset")]
         public int Offset { get; set; } = offset;
@@ -22,6 +22,8 @@ namespace Scheduler.Model.TaskAggregate
         
         [JsonProperty("deadline")]
         public int? Deadline { get; set; }
+
+        [JsonIgnore] public int? AbsoluteDeadline { get; set; }
 
         [JsonIgnore]
         public double? Priority { get; set; }
@@ -44,13 +46,19 @@ namespace Scheduler.Model.TaskAggregate
         [JsonIgnore]
         public List<int> ExecutePoints { get; } = [];
 
-        [JsonIgnore] public List<int> EntryPoints { get; } = [];
+        [JsonIgnore] 
+        public List<int> EntryPoints { get; } = [];
 
         [JsonIgnore]
         public List<int> LostDeadlinePoints { get; } = [];
 
         [JsonIgnore] 
         public List<PriorityInversionData> ListOfInversions { get; } = [];
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
     
     public struct PriorityInversionData(TaskModel higherPriorityTask, TaskModel lowerPriorityTask, int pointOfInversion)

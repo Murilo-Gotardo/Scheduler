@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Text;
 using Newtonsoft.Json;
 using Scheduler.Model.CpuAggregate;
 using Scheduler.Model.SchedulerAggregate;
@@ -18,20 +19,19 @@ namespace Scheduler.Infrastructure
             SimulationModel simulationModel = new();
             var scheduler = SelectScheduler(schedulerJson.SchedulerName);
 
-            // switch (scheduler)
-            // {
-            //     case RmSchedulerRepository when !CalculateRateMonotonicScalability(schedulerJson):
-            //         consoleLogger.LogInfo("O conjunto não é escalonável");
-            //         return;
-            //     case EdfSchedulerRepository when !CalculateEarliestDeadlineFirstScalability(schedulerJson):
-            //         consoleLogger.LogInfo("O conjunto não é escalonável");
-            //         return;
-            // }
+            switch (schedulerJson.SchedulerName.ToUpper())
+            {
+                case "RM" when !CalculateRateMonotonicScalability(schedulerJson):
+                    WarnNotScalableScheduler();
+                    return;
+                case "EDF" when !CalculateEarliestDeadlineFirstScalability(schedulerJson):
+                    WarnNotScalableScheduler();
+                    return;
+            }
             
             consoleLogger.LogInfo("O conjunto é escalonável");
             consoleLogger.LogInfo("Seguindo em frente");
             
-
             List<TaskModel> allTasksThroughSystem = [];
             Queue<TaskModel> readyQueue = [];
 
@@ -69,15 +69,19 @@ namespace Scheduler.Infrastructure
         private static bool CalculateRateMonotonicScalability(SchedulerModel schedulerModel)
         {
             var sum = schedulerModel.Tasks.Sum(t => (double)t.ComputationTime / t.PeriodTime);
-
             return sum <= schedulerModel.TasksNumber * Math.Pow(2, 1 / (double)schedulerModel.TasksNumber) - 1;
         }
         
         private static bool CalculateEarliestDeadlineFirstScalability(SchedulerModel schedulerModel)
         {
             var sum = schedulerModel.Tasks.Sum(t => (double)t.ComputationTime / t.PeriodTime);
-
             return sum <= 1;
+        }
+
+        private void WarnNotScalableScheduler()
+        {
+            consoleLogger.LogInfo("O conjunto não é escalonável");
+            consoleLogger.LogInfo("Terminando a execução");
         }
 
         private static void CalculateReadyQueue(ref Queue<TaskModel> readyQueue, List<TaskModel> allTasksThroughSystem, SchedulerModel schedulerJson, SimulationModel simulationModel)
@@ -100,21 +104,30 @@ namespace Scheduler.Infrastructure
                 
                 var taskToUse = allTasksThroughSystem.Find(t => t.Id.Equals(idToUse));
 
-                if (task.Quantum != null && !allTasksThroughSystem.Contains(taskToUse))
+                if (task.Quantum != null)
                 {
                     taskToUse.Quantum = task.Quantum;
                 }
 
-                if (task.Deadline != null && !allTasksThroughSystem.Contains(taskToUse))
+                if (task.Deadline != null)
                 {
                     taskToUse.Deadline = task.Deadline;
                 }
-
-                if (taskToUse.Cycle * task.PeriodTime + task.Offset == simulationModel.Time)
+                
+                if (taskToUse.Cycle * task.PeriodTime + task.Offset == simulationModel.Time && !readyQueue.Contains(taskToUse))
+                {
+                    if ((CpuModel.TaskSo != null && !CpuModel.TaskSo.Equals(taskToUse)) || CpuModel.TaskSo == null)
+                    {
+                        taskToUse.Cycle++;
+                        taskToUse.AbsoluteDeadline = simulationModel.Time + taskToUse.Deadline;
+                        taskToUse.EntryPoints.Add(simulationModel.Time);
+                        readyQueue.Enqueue(taskToUse);
+                    }
+                } 
+                
+                if (taskToUse.Cycle * task.PeriodTime + task.Offset == simulationModel.Time && (readyQueue.Contains(taskToUse) || (CpuModel.TaskSo != null && CpuModel.TaskSo.Equals(taskToUse))))
                 {
                     taskToUse.Cycle++;
-                    taskToUse.EntryPoints.Add(simulationModel.Time);
-                    readyQueue.Enqueue(taskToUse);
                 }
                 
                 if (simulationModel.TaskNumber < schedulerJson.TasksNumber) simulationModel.TaskNumber++;
@@ -126,7 +139,7 @@ namespace Scheduler.Infrastructure
             foreach (var task in allTasksThroughSystem.Where(task => task.LostDeadlinePoints.Count != 0))
             {
                 consoleLogger.LogInfo($"{task.Id} perdeu o deadline nos ticks {string.Join(", ", task.LostDeadlinePoints)}");
-                consoleLogger.LogInfo($"Com uma frequencia de perca de {(double)task.Cycle / task.LostDeadlinePoints.Count * 100}%");
+                consoleLogger.LogInfo($"Com uma frequencia de perca de {(double)task.ExecutePoints.Count / task.LostDeadlinePoints.Count} (ativações/percas)");
             }
         }
 
@@ -153,15 +166,9 @@ namespace Scheduler.Infrastructure
             double sum = 0;
             foreach (var task in tasks)
             {
-                CalculateTurnAroundTimeSum(ref sum, task.CompletionTime, task.Offset);
-                if (!(CalculateTurnAroundTimeForTask(task.CompletionTime, task.Offset) <= 0))
-                { 
-                    consoleLogger.LogStatistics("Turnaround time de " + task.Id + ": " + CalculateTurnAroundTimeForTask(task.CompletionTime, task.Offset));
-                }
-                else
-                {
-                    consoleLogger.LogInfo($"{task.Id} não completou sua execução nesta simulção");
-                }
+                CalculateTurnAroundTimeSum(ref sum, task.ExecutedTime, task.WaitedTime);
+                var tat = CalculateTurnAroundTimeForTask(task.ExecutedTime, task.WaitedTime);
+                consoleLogger.LogStatistics("Turnaround time de " + task.Id + ": " + tat);
             }
 
             consoleLogger.LogStatistics("Turnaround time médio do sistema: " + CalculateAvgTurnAroundTime(sum, tasks.Count));
@@ -169,9 +176,9 @@ namespace Scheduler.Infrastructure
 
         private static double CalculateAvgTurnAroundTime(double sum, int tasksNumber) => sum / tasksNumber;
 
-        private static void CalculateTurnAroundTimeSum(ref double sum, int completionTime, int offset) => sum += (completionTime - offset);
-
-        private static int CalculateTurnAroundTimeForTask(int completionTime, int offset) => completionTime - offset;
+        private static void CalculateTurnAroundTimeSum(ref double sum, int totalComputationTime, int totalWaitTime) => sum += CalculateTurnAroundTimeForTask(totalComputationTime, totalWaitTime);
+        
+        private static int CalculateTurnAroundTimeForTask(int totalComputationTime, int totalWaitTime) => totalComputationTime + totalWaitTime;
 
         private void ShowWaitTime(List<TaskModel> tasks)
         {
@@ -218,11 +225,11 @@ namespace Scheduler.Infrastructure
 
         private static void ShowTableOfTasks(int taskNumber, int totalSimulationTime, List<TaskModel> allTasksThroughSystem)
         {
-            int[] tasks = new int[taskNumber], time = new int[totalSimulationTime];
+            var time = new int[totalSimulationTime];
 
             Console.OutputEncoding = Encoding.UTF8;
 
-            for (var i = tasks.Length; i > 0; i--)
+            for (var i = allTasksThroughSystem.Count; i > 0; i--)
             {
                 var idToSearch = "T" + i;
                 Console.Write(allTasksThroughSystem.Find(t => t.Id.Equals(idToSearch)).Id +  " |");

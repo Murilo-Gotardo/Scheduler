@@ -1,5 +1,5 @@
 ﻿{
-  "simulation_time": 20,
+  "simulation_time": 18,
   "scheduler_name": "edf",
   "tasks_number": 2,
   "tasks": [
@@ -11,7 +11,7 @@
     },
     {
       "offset": 0,
-      "computation_time": 1,
+      "computation_time": 2,
       "period_time": 5,
       "deadline": 1
     }

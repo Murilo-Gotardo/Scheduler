@@ -30,43 +30,7 @@ namespace Scheduler.Infrastructure
 
         public void VerifyLostDeadLine(TaskModel task, int time)
         {
-            // var enter = task.Cycle * task.PeriodTime + task.Offset;
-            // int computed = 0, waited = 0;
-            //
-            // if (task.ExecutePoints.Count == 0)
-            // {
-            //     waited += task.WaitPoints.Count(e => e > task.EntryPoints.Last());
-            //     
-            //     if (waited < task.Deadline)
-            //     {
-            //         task.LostDeadlinePoints.Add(time);
-            //     }
-            // }
-            // else if (task.WaitPoints.Count == 0)
-            // {
-            //     computed += task.ExecutePoints.Count(e => e > task.EntryPoints.Last());
-            //
-            //     if (computed < task.Deadline)
-            //     {
-            //         task.LostDeadlinePoints.Add(time);
-            //     }
-            // }
-            // else
-            // {
-            //     computed += task.ExecutePoints.Count(a => a <= task.EntryPoints.Last() && task.ExecutePoints.Contains(a));
-            //
-            //     waited += task.WaitPoints.Count(b => b <= task.EntryPoints.Last() && task.ExecutePoints.Contains(b));
-            //     
-            //     // var executeOnCycle = Math.Abs(task.ExecutePoints.Last() - task.ComputationTime * task.Cycle);
-            //     // var waitedOnCycle = Math.Abs(task.WaitPoints.Last() - task.WaitedTime / task.Cycle);
-            //     if (computed + waited - task.Deadline > task.Deadline)
-            //     {
-            //         task.LostDeadlinePoints.Add(time);
-            //     }
-            // }
-
-
-            if (time > task.Deadline)
+            if (time >= task.AbsoluteDeadline)
             {
                 task.LostDeadlinePoints.Add(time);
             }
@@ -81,13 +45,24 @@ namespace Scheduler.Infrastructure
             CpuModel.TaskSo.ExecutePoints.Add(time);
         }
 
-        public void MakeTasksWait(Queue<TaskModel> readyQueue, int time)
+        public void MakeTasksWait(Queue<TaskModel> readyQueue, int time, int totalSimulationTime)
         {
-            if (readyQueue.Count == 0) return;
+            if (readyQueue.Count == 0 || time == totalSimulationTime) return;
             foreach (var task in readyQueue)
             {
                 task.WaitPoints.Add(time);
                 task.WaitedTime++;
+            }
+        }
+        
+        public void MakeTasksWaitDeadline(Queue<TaskModel> readyQueue, int time, int totalSimulationTime)
+        {
+            if (readyQueue.Count == 0 || time == totalSimulationTime) return;
+            foreach (var task in readyQueue)
+            {
+                task.WaitPoints.Add(time);
+                task.WaitedTime++;
+                VerifyLostDeadLine(task, time);
             }
         }
 
