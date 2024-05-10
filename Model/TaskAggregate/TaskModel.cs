@@ -23,7 +23,7 @@ namespace Scheduler.Model.TaskAggregate
         [JsonProperty("deadline")]
         public int? Deadline { get; set; }
 
-        [JsonIgnore] public int? AbsoluteDeadline { get; set; }
+        [JsonIgnore] public int AbsoluteDeadline { get; set; }
 
         [JsonIgnore]
         public double? Priority { get; set; }

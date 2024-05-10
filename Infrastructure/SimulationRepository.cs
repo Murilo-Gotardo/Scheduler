@@ -119,7 +119,7 @@ namespace Scheduler.Infrastructure
                     if ((CpuModel.TaskSo != null && !CpuModel.TaskSo.Equals(taskToUse)) || CpuModel.TaskSo == null)
                     {
                         taskToUse.Cycle++;
-                        taskToUse.AbsoluteDeadline = simulationModel.Time + taskToUse.Deadline;
+                        taskToUse.AbsoluteDeadline = simulationModel.Time + taskToUse.Deadline ?? -1;
                         taskToUse.EntryPoints.Add(simulationModel.Time);
                         readyQueue.Enqueue(taskToUse);
                     }

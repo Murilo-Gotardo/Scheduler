@@ -33,7 +33,7 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
 
     public void RateMonotonic(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime)
     {
-        CalculatePriority(readyQueue, Priority.Rm, time);
+        CalculatePriority(readyQueue, Priority.Rm);
         ReorderReadyQueue(ref readyQueue);
         
         cpu.VerifyTaskCompletion(time);
@@ -52,7 +52,7 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
 
     public void EarliestDeadlineFirst(ref Queue<TaskModel> readyQueue, int time, int totalSimulationTime)
     {
-        CalculatePriority(readyQueue, Priority.Edf, time);
+        CalculatePriority(readyQueue, Priority.Edf);
         ReorderReadyQueue(ref readyQueue);
         
         cpu.VerifyTaskCompletion(time);
@@ -69,7 +69,7 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
         cpu.MakeTasksWaitDeadline(readyQueue, time, totalSimulationTime);
     }
     
-    private static void CalculatePriority(IReadOnlyCollection<TaskModel> readyQueue, Priority priority, int? time = null)
+    private static void CalculatePriority(IReadOnlyCollection<TaskModel> readyQueue, Priority priority)
     {
         switch (priority)
         {
@@ -77,10 +77,10 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
                 CalculatePriorityWithRandom(readyQueue);
                 break;
             case Priority.Rm:
-                CalculateRmPriority(readyQueue, time);
+                CalculateRmPriority(readyQueue);
                 break;
             case Priority.Edf:
-                CalculateEdfPriority(readyQueue, time);
+                CalculateEdfPriority(readyQueue);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(priority), priority, null);
@@ -96,28 +96,21 @@ public class SchedulerRepository(ICpu cpu) : IScheduler
         }
     }
 
-    private static void CalculateRmPriority(IReadOnlyCollection<TaskModel> readyQueue, int? time)
+    private static void CalculateRmPriority(IReadOnlyCollection<TaskModel> readyQueue)
     {
         if (readyQueue.Count == 0) return;
         foreach (var task in readyQueue.Where(task => task.Priority == null))
         {
-            task.Priority = task.Deadline - time;
+            task.Priority = task.Deadline;
         }
     }
     
-    private static void CalculateEdfPriority(IReadOnlyCollection<TaskModel> readyQueue, int? time)
+    private static void CalculateEdfPriority(IReadOnlyCollection<TaskModel> readyQueue)
     {
         if (readyQueue.Count == 0) return;
-        foreach (var task in readyQueue.Where(task => task.Priority == null))
+        foreach (var task in readyQueue)
         {
-            if (task.ExecutePoints.Count != 0)
-            {
-                task.Priority = task.ExecutePoints.Last() - task.Deadline;
-            }
-            else
-            {
-                task.Priority = task.Deadline;
-            }
+            task.Priority = task.ExecutePoints.Count != 0 ? task.AbsoluteDeadline : task.Deadline;
         }
     }
     
